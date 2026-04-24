@@ -16,9 +16,11 @@ import {
 } from "firebase/firestore";
 
 function App() {
+  const libraries = ["places"];
+
   const containerStyle = {
     width: "100%",
-    height: "400px",
+    height: "58vh",
   };
 
   const [map, setMap] = useState(null);
@@ -124,7 +126,7 @@ function App() {
         memo: memo,
       }));
 
-      alert("메모가 수정되었습니다!");
+      alert("수정되었습니다!");
       return;
     }
 
@@ -194,20 +196,27 @@ function App() {
   return (
     <LoadScript
       googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}
-      libraries={["places"]}
+      libraries={libraries}
     >
       <div style={{ height: "100vh", backgroundColor: "#f5f5f5" }}>
-        <h1 style={{ textAlign: "center", margin: 0, padding: "16px 0" }}>
+        <h1
+          style={{
+            textAlign: "center",
+            margin: 0,
+            padding: "14px 0",
+            fontSize: "28px",
+          }}
+        >
           🍽 먹킷
         </h1>
 
         <div
           style={{
             position: "absolute",
-            top: "70px",
+            top: "72px",
             left: "50%",
             transform: "translateX(-50%)",
-            width: "80%",
+            width: "82%",
             zIndex: 10,
           }}
         >
@@ -226,11 +235,12 @@ function App() {
               onChange={(e) => setSearchText(e.target.value)}
               style={{
                 width: "100%",
-                padding: "12px",
-                borderRadius: "10px",
+                padding: "13px",
+                borderRadius: "14px",
                 border: "1px solid #ddd",
-                boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
-                fontSize: "14px",
+                boxShadow: "0 3px 8px rgba(0,0,0,0.18)",
+                fontSize: "15px",
+                boxSizing: "border-box",
               }}
             />
           </Autocomplete>
@@ -250,8 +260,8 @@ function App() {
               icon={{
                 url:
                   place.status === "want"
-                    ? "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
-                    : "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
+                    ? "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+                    : "https://maps.google.com/mapfiles/ms/icons/green-dot.png",
               }}
             />
           ))}
@@ -268,73 +278,121 @@ function App() {
           style={{
             position: "fixed",
             bottom: 0,
-            width: "100%",
+            left: 0,
+            right: 0,
             backgroundColor: "white",
-            padding: "10px 20px 20px 20px",
-            borderTop: "1px solid #ddd",
-            boxShadow: "0 -2px 5px rgba(0,0,0,0.1)",
+            padding: "12px 18px 18px",
+            borderTopLeftRadius: "22px",
+            borderTopRightRadius: "22px",
+            boxShadow: "0 -4px 12px rgba(0,0,0,0.18)",
+            maxHeight: "42vh",
+            overflowY: "auto",
           }}
         >
           <div
             style={{
-              maxHeight: "120px",
+              width: "42px",
+              height: "5px",
+              backgroundColor: "#ddd",
+              borderRadius: "999px",
+              margin: "0 auto 12px",
+            }}
+          />
+
+          <div
+            style={{
+              maxHeight: "115px",
               overflowY: "auto",
-              marginBottom: "10px",
+              marginBottom: "14px",
+              border: "1px solid #eee",
+              borderRadius: "12px",
             }}
           >
-            {filteredPlaces.map((place) => (
-              <div
-                key={place.id}
-                onClick={() => handleSelectPlace(place)}
-                style={{
-                  padding: "10px",
-                  borderBottom: "1px solid #eee",
-                  cursor: "pointer",
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span>{place.name}</span>
-                <span
+            {filteredPlaces.length > 0 ? (
+              filteredPlaces.map((place) => (
+                <div
+                  key={place.id}
+                  onClick={() => handleSelectPlace(place)}
                   style={{
-                    color: place.status === "want" ? "red" : "green",
-                    fontWeight: "bold",
+                    padding: "12px",
+                    borderBottom: "1px solid #eee",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    backgroundColor:
+                      selectedPlace?.id === place.id ? "#f8f8f8" : "white",
                   }}
                 >
-                  ●
-                </span>
-              </div>
-            ))}
+                  <span style={{ fontSize: "15px" }}>{place.name}</span>
+                  <span
+                    style={{
+                      color: place.status === "want" ? "#ff4d4f" : "#2f9e44",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    ●
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p style={{ padding: "12px", margin: 0, color: "#777" }}>
+                저장된 맛집이 없습니다.
+              </p>
+            )}
           </div>
 
           {selectedPlace ? (
-            <>
-              <h3 style={{ margin: 0 }}>{selectedPlace.name}</h3>
+            <div
+              style={{
+                border: "1px solid #eee",
+                borderRadius: "16px",
+                padding: "14px",
+                backgroundColor: "#fff",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "10px",
+                  alignItems: "center",
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: "20px" }}>
+                  {selectedPlace.name}
+                </h2>
 
-              <p style={{ marginTop: "8px", marginBottom: 0 }}>
-                상태:{" "}
                 <span
                   style={{
-                    color: selectedPlace.status === "want" ? "red" : "green",
+                    flexShrink: 0,
+                    padding: "5px 9px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
                     fontWeight: "bold",
+                    color: "white",
+                    backgroundColor:
+                      selectedPlace.status === "want" ? "#ff4d4f" : "#2f9e44",
                   }}
                 >
                   {selectedPlace.status === "want" ? "가고싶음" : "가봄"}
                 </span>
-              </p>
+              </div>
 
               <textarea
-                placeholder="메모를 입력하세요 (왜 저장했는지, 먹고 싶은 메뉴 등)"
+                placeholder="메모를 입력하세요. 예: 유튜브에서 봄, 대표 메뉴, 같이 갈 사람"
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 style={{
-                  marginTop: "10px",
+                  marginTop: "12px",
                   width: "100%",
-                  padding: "10px",
-                  borderRadius: "8px",
+                  minHeight: "70px",
+                  padding: "11px",
+                  borderRadius: "12px",
                   border: "1px solid #ddd",
                   resize: "none",
                   boxSizing: "border-box",
+                  fontSize: "14px",
                 }}
               />
 
@@ -342,12 +400,12 @@ function App() {
                 onClick={handleSavePlace}
                 style={{
                   marginTop: "10px",
-                  padding: "10px",
+                  padding: "12px",
                   width: "100%",
                   backgroundColor: "#ff4d4f",
                   color: "white",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "12px",
                   cursor: "pointer",
                   fontSize: "15px",
                   fontWeight: "bold",
@@ -360,13 +418,13 @@ function App() {
                 onClick={handleToggleStatus}
                 style={{
                   marginTop: "8px",
-                  padding: "10px",
+                  padding: "12px",
                   width: "100%",
                   backgroundColor:
                     selectedPlace.status === "want" ? "#2f9e44" : "#ff4d4f",
                   color: "white",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "12px",
                   cursor: "pointer",
                   fontSize: "15px",
                   fontWeight: "bold",
@@ -381,12 +439,12 @@ function App() {
                 onClick={handleDeletePlace}
                 style={{
                   marginTop: "8px",
-                  padding: "10px",
+                  padding: "12px",
                   width: "100%",
                   backgroundColor: "#666",
                   color: "white",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "12px",
                   cursor: "pointer",
                   fontSize: "15px",
                   fontWeight: "bold",
@@ -394,9 +452,16 @@ function App() {
               >
                 삭제하기
               </button>
-            </>
+            </div>
           ) : (
-            <p style={{ margin: 0 }}>
+            <p
+              style={{
+                margin: 0,
+                color: "#666",
+                fontSize: "14px",
+                textAlign: "center",
+              }}
+            >
               핀 또는 리스트를 선택하면 가게 정보가 표시됩니다.
             </p>
           )}
