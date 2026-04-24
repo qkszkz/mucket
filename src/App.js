@@ -26,6 +26,7 @@ function App() {
   const [map, setMap] = useState(null);
   const [center, setCenter] = useState({ lat: 37.5665, lng: 126.978 });
   const [places, setPlaces] = useState([]);
+  const [visiblePlaces, setVisiblePlaces] = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [memo, setMemo] = useState("");
@@ -49,6 +50,23 @@ function App() {
   const filteredPlaces = places.filter((place) =>
     place.name.toLowerCase().includes(searchText.toLowerCase())
   );
+
+  const listPlaces =
+    visiblePlaces.length > 0 ? visiblePlaces : filteredPlaces;
+
+  const updateVisiblePlaces = () => {
+    if (!map) return;
+
+    const bounds = map.getBounds();
+    if (!bounds) return;
+
+    const filteredByBounds = filteredPlaces.filter((place) => {
+      const latLng = new window.google.maps.LatLng(place.lat, place.lng);
+      return bounds.contains(latLng);
+    });
+
+    setVisiblePlaces(filteredByBounds);
+  };
 
   const onLoadAutocomplete = (autocomplete) => {
     autocompleteRef.current = autocomplete;
@@ -212,7 +230,10 @@ function App() {
               type="text"
               placeholder="맛집 검색..."
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                setVisiblePlaces([]);
+              }}
               style={{
                 width: "100%",
                 padding: "13px",
@@ -231,6 +252,7 @@ function App() {
           center={center}
           zoom={13}
           onLoad={(mapInstance) => setMap(mapInstance)}
+          onIdle={updateVisiblePlaces}
         >
           {filteredPlaces.map((place) => (
             <Marker
@@ -291,8 +313,8 @@ function App() {
               borderRadius: "12px",
             }}
           >
-            {filteredPlaces.length > 0 ? (
-              filteredPlaces.map((place) => (
+            {listPlaces.length > 0 ? (
+              listPlaces.map((place) => (
                 <div
                   key={place.id}
                   onClick={() => handleSelectPlace(place)}
@@ -319,7 +341,7 @@ function App() {
               ))
             ) : (
               <p style={{ padding: "12px", margin: 0, color: "#777" }}>
-                저장된 맛집이 없습니다.
+                현재 지도 화면에 저장된 맛집이 없습니다.
               </p>
             )}
           </div>
