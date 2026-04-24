@@ -8,11 +8,9 @@ import {
 import { db } from "./firebase";
 import {
   collection,
-  addDoc,
   getDocs,
   doc,
   updateDoc,
-  deleteDoc,
 } from "firebase/firestore";
 
 const libraries = ["places"];
