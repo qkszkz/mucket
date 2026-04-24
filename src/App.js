@@ -253,6 +253,9 @@ function App() {
           zoom={13}
           onLoad={(mapInstance) => setMap(mapInstance)}
           onIdle={updateVisiblePlaces}
+          options={{
+            gestureHandling: "greedy",
+          }}
         >
           {filteredPlaces.map((place) => (
             <Marker
