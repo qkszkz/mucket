@@ -31,6 +31,7 @@ function App() {
   const [searchText, setSearchText] = useState("");
   const [memo, setMemo] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [myLocation, setMyLocation] = useState(null);
 
   const autocompleteRef = useRef(null);
 
@@ -65,6 +66,33 @@ function App() {
     });
 
     setVisiblePlaces(filteredByBounds);
+  };
+
+  const getMyLocation = () => {
+    if (!navigator.geolocation) {
+      alert("위치 기능을 지원하지 않는 브라우저입니다.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+
+        setMyLocation(location);
+        setCenter(location);
+
+        if (map) {
+          map.panTo(location);
+          map.setZoom(16);
+        }
+      },
+      () => {
+        alert("위치 정보를 가져올 수 없습니다.");
+      }
+    );
   };
 
   const onLoadAutocomplete = (autocomplete) => {
@@ -294,6 +322,26 @@ function App() {
           </Autocomplete>
         </div>
 
+        <button
+          onClick={getMyLocation}
+          style={{
+            position: "absolute",
+            top: "128px",
+            right: "16px",
+            zIndex: 10,
+            padding: "10px 12px",
+            backgroundColor: "white",
+            border: "1px solid #ddd",
+            borderRadius: "12px",
+            boxShadow: "0 3px 8px rgba(0,0,0,0.18)",
+            cursor: "pointer",
+            fontSize: "14px",
+            fontWeight: "bold",
+          }}
+        >
+          📍 내 위치
+        </button>
+
         <GoogleMap
           mapContainerStyle={containerStyle}
           center={center}
@@ -331,6 +379,15 @@ function App() {
                 position={{ lat: selectedPlace.lat, lng: selectedPlace.lng }}
               />
             )}
+
+          {myLocation && (
+            <Marker
+              position={myLocation}
+              icon={{
+                url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+              }}
+            />
+          )}
         </GoogleMap>
 
         <div
