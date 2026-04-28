@@ -5,7 +5,7 @@ import {
   Marker,
   Autocomplete,
 } from "@react-google-maps/api";
-import { db } from "./firebase";
+import { db, auth, provider } from "./firebase";
 import {
   collection,
   addDoc,
@@ -14,15 +14,21 @@ import {
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
+import {
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+} from "firebase/auth";
 
 const libraries = ["places"];
 
 function App() {
   const containerStyle = {
     width: "100%",
-    height: "calc(100vh - 64px)",
+    height: "calc(100vh - 104px)",
   };
 
+  const [user, setUser] = useState(null);
   const [map, setMap] = useState(null);
   const [center, setCenter] = useState({ lat: 37.5665, lng: 126.978 });
   const [places, setPlaces] = useState([]);
@@ -36,18 +42,48 @@ function App() {
   const autocompleteRef = useRef(null);
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser || null);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
     const fetchPlaces = async () => {
-      const querySnapshot = await getDocs(collection(db, "places"));
+      if (!user) {
+        setPlaces([]);
+        return;
+      }
+
+      const querySnapshot = await getDocs(
+        collection(db, "users", user.uid, "places")
+      );
+
       const loadedPlaces = querySnapshot.docs.map((docSnap) => ({
         id: docSnap.id,
         favorite: false,
         ...docSnap.data(),
       }));
+
       setPlaces(loadedPlaces);
     };
 
     fetchPlaces();
-  }, []);
+  }, [user]);
+
+  const handleLogin = async () => {
+    await signInWithPopup(auth, provider);
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    setPlaces([]);
+    setSelectedPlace(null);
+    setMemo("");
+    setSearchText("");
+    setIsPanelOpen(false);
+  };
 
   const filteredPlaces = places.filter((place) =>
     place.name.toLowerCase().includes(searchText.toLowerCase())
@@ -138,6 +174,7 @@ function App() {
   };
 
   const handlePoiClick = (event, mapInstance) => {
+    if (!user) return;
     if (!event.placeId) return;
 
     event.stop();
@@ -181,6 +218,11 @@ function App() {
   };
 
   const handleSavePlace = async () => {
+    if (!user) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
     if (!selectedPlace) return;
 
     const placeToSave = {
@@ -190,7 +232,7 @@ function App() {
     };
 
     if (selectedPlace.id) {
-      await updateDoc(doc(db, "places", selectedPlace.id), {
+      await updateDoc(doc(db, "users", user.uid, "places", selectedPlace.id), {
         memo,
         status: selectedPlace.status,
         favorite: selectedPlace.favorite || false,
@@ -226,7 +268,10 @@ function App() {
       return;
     }
 
-    const docRef = await addDoc(collection(db, "places"), placeToSave);
+    const docRef = await addDoc(
+      collection(db, "users", user.uid, "places"),
+      placeToSave
+    );
 
     const savedPlace = {
       id: docRef.id,
@@ -239,6 +284,11 @@ function App() {
   };
 
   const handleToggleFavorite = async () => {
+    if (!user) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
     if (!selectedPlace || !selectedPlace.id) {
       alert("저장된 맛집만 즐겨찾기할 수 있습니다.");
       return;
@@ -246,7 +296,7 @@ function App() {
 
     const newFavorite = !selectedPlace.favorite;
 
-    await updateDoc(doc(db, "places", selectedPlace.id), {
+    await updateDoc(doc(db, "users", user.uid, "places", selectedPlace.id), {
       favorite: newFavorite,
     });
 
@@ -265,6 +315,11 @@ function App() {
   };
 
   const handleToggleStatus = async () => {
+    if (!user) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
     if (!selectedPlace || !selectedPlace.id) {
       alert("저장된 맛집만 상태를 변경할 수 있습니다.");
       return;
@@ -272,7 +327,7 @@ function App() {
 
     const newStatus = selectedPlace.status === "want" ? "visited" : "want";
 
-    await updateDoc(doc(db, "places", selectedPlace.id), {
+    await updateDoc(doc(db, "users", user.uid, "places", selectedPlace.id), {
       status: newStatus,
     });
 
@@ -289,6 +344,11 @@ function App() {
   };
 
   const handleDeletePlace = async () => {
+    if (!user) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
     if (!selectedPlace || !selectedPlace.id) {
       alert("저장된 맛집만 삭제할 수 있습니다.");
       return;
@@ -296,7 +356,7 @@ function App() {
 
     if (!window.confirm("정말 이 맛집을 삭제할까요?")) return;
 
-    await deleteDoc(doc(db, "places", selectedPlace.id));
+    await deleteDoc(doc(db, "users", user.uid, "places", selectedPlace.id));
 
     setPlaces((prev) =>
       prev.filter((place) => place.id !== selectedPlace.id)
@@ -315,6 +375,66 @@ function App() {
       libraries={libraries}
     >
       <div style={{ height: "100vh", backgroundColor: "#f5f5f5" }}>
+        <div
+          style={{
+            height: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 14px",
+            backgroundColor: "white",
+            borderBottom: "1px solid #eee",
+            boxSizing: "border-box",
+            fontSize: "13px",
+          }}
+        >
+          {user ? (
+            <>
+              <span
+                style={{
+                  maxWidth: "70%",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {user.displayName || user.email} 님
+              </span>
+
+              <button
+                onClick={handleLogout}
+                style={{
+                  border: "none",
+                  backgroundColor: "#eee",
+                  borderRadius: "999px",
+                  padding: "5px 10px",
+                  cursor: "pointer",
+                }}
+              >
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <>
+              <span>로그인 후 내 맛집을 저장할 수 있어요</span>
+              <button
+                onClick={handleLogin}
+                style={{
+                  border: "none",
+                  backgroundColor: "#ff4d4f",
+                  color: "white",
+                  borderRadius: "999px",
+                  padding: "6px 12px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                Google 로그인
+              </button>
+            </>
+          )}
+        </div>
+
         <div
           style={{
             height: "64px",
@@ -338,8 +458,11 @@ function App() {
             >
               <input
                 type="text"
-                placeholder="먹킷에서 맛집 검색"
+                placeholder={
+                  user ? "먹킷에서 맛집 검색" : "로그인 후 검색할 수 있어요"
+                }
                 value={searchText}
+                disabled={!user}
                 onChange={(e) => {
                   setSearchText(e.target.value);
                   setVisiblePlaces([]);
@@ -353,6 +476,7 @@ function App() {
                   fontSize: "15px",
                   boxSizing: "border-box",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                  backgroundColor: user ? "white" : "#f1f1f1",
                 }}
               />
             </Autocomplete>
@@ -361,9 +485,10 @@ function App() {
 
         <button
           onClick={getMyLocation}
+          disabled={!user}
           style={{
             position: "absolute",
-            top: "76px",
+            top: "116px",
             right: "14px",
             zIndex: 10,
             padding: "9px 11px",
@@ -371,9 +496,10 @@ function App() {
             border: "1px solid #ddd",
             borderRadius: "12px",
             boxShadow: "0 3px 8px rgba(0,0,0,0.18)",
-            cursor: "pointer",
+            cursor: user ? "pointer" : "not-allowed",
             fontSize: "15px",
             fontWeight: "bold",
+            opacity: user ? 1 : 0.5,
           }}
         >
           📍
@@ -465,7 +591,11 @@ function App() {
               borderRadius: "12px",
             }}
           >
-            {listPlaces.length > 0 ? (
+            {!user ? (
+              <p style={{ padding: "12px", margin: 0, color: "#777" }}>
+                Google 로그인 후 내 맛집 목록을 사용할 수 있습니다.
+              </p>
+            ) : listPlaces.length > 0 ? (
               listPlaces.map((place) => (
                 <div
                   key={place.id}
