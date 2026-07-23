@@ -369,6 +369,50 @@ function App() {
     alert("삭제되었습니다.");
   };
 
+  const handleOpenNaverMap = () => {
+  if (!selectedPlace) {
+    alert("맛집을 먼저 선택해 주세요.");
+    return;
+  }
+
+  const destinationName = encodeURIComponent(selectedPlace.name);
+  const { lat, lng } = selectedPlace;
+
+  // 현재 위치는 네이버지도 앱이 자동으로 잡도록 출발지 생략
+  const naverAppUrl =
+    `nmap://route/public?` +
+    `dlat=${lat}` +
+    `&dlng=${lng}` +
+    `&dname=${destinationName}` +
+    `&appname=mucket`;
+
+  // 앱 호출이 안 될 때 목적지 검색 화면으로 이동
+  const naverWebUrl =
+    `https://map.naver.com/p/search/${destinationName}`;
+
+  window.location.href = naverAppUrl;
+
+  setTimeout(() => {
+    window.location.href = naverWebUrl;
+  }, 1500);
+};
+
+const handleOpenKakaoMap = () => {
+  if (!selectedPlace) {
+    alert("맛집을 먼저 선택해 주세요.");
+    return;
+  }
+
+  const destinationName = encodeURIComponent(selectedPlace.name);
+  const { lat, lng } = selectedPlace;
+
+  // 출발지는 사용자의 현재 위치를 카카오맵에서 설정
+  const kakaoMapUrl =
+    `https://map.kakao.com/link/to/` +
+    `${destinationName},${lat},${lng}`;
+
+  window.open(kakaoMapUrl, "_blank", "noopener,noreferrer");
+};
   return (
     <LoadScript
       googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}
@@ -684,6 +728,48 @@ function App() {
                   boxSizing: "border-box",
                 }}
               />
+
+              <div
+  style={{
+    display: "flex",
+    gap: "8px",
+    marginTop: "10px",
+  }}
+>
+  <button
+    onClick={handleOpenNaverMap}
+    style={{
+      flex: 1,
+      padding: "12px",
+      backgroundColor: "#03c75a",
+      color: "white",
+      border: "none",
+      borderRadius: "12px",
+      cursor: "pointer",
+      fontSize: "14px",
+      fontWeight: "bold",
+    }}
+  >
+    네이버지도
+  </button>
+
+  <button
+    onClick={handleOpenKakaoMap}
+    style={{
+      flex: 1,
+      padding: "12px",
+      backgroundColor: "#fee500",
+      color: "#191919",
+      border: "none",
+      borderRadius: "12px",
+      cursor: "pointer",
+      fontSize: "14px",
+      fontWeight: "bold",
+    }}
+  >
+    카카오맵
+  </button>
+</div>
 
               <button onClick={handleSavePlace} style={buttonStyle("#ff4d4f")}>
                 저장하기 / 수정하기
